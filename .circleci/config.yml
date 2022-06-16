@@ -12,3 +12,42 @@ jobs:
           steps:
             - run: npm install
       - run: npm run test
+Commit your change, then return to the Projects page in CircleCI. You should see a new pipeline running… and it will fail! What’s going on?
+
+The Node orb runs some common Node tasks. Because you are working with an empty repository, running npm run test, a Node script, causes the configuration to fail. To fix this, you need to set up a Node project in your repository—a topic for another tutorial. You can view several demo applications that go into more detail on setting up CircleCI with various languages and frameworks.
+
+Use workflows
+You do not have to use orbs to use CircleCI. The following example details how to create a custom configuration that also uses the workflow feature of CircleCI.
+
+Take a moment and read the comments in the code block below. Then, to see workflows in action, edit your .circleci/config.yml file and copy and paste the following text into it.
+
+version: 2
+jobs: # we now have TWO jobs, so that a workflow can coordinate them!
+  one: # This is our first job.
+    docker: # it uses the docker executor
+      - image: cimg/ruby:2.6.8 # specifically, a docker image with ruby 2.6.8
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
+    # Steps are a list of commands to run inside the docker container above.
+    steps:
+      - checkout # this pulls code down from GitHub
+      - run: echo "A first hello" # This prints "A first hello" to stdout.
+      - run: sleep 25 # a command telling the job to "sleep" for 25 seconds.
+  two: # This is our second job.
+    docker: # it runs inside a docker image, the same as above.
+      - image: cimg/ruby:3.0.2
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
+    steps:
+      - checkout
+      - run: echo "A more familiar hi" # We run a similar echo command to above.
+      - run: sleep 15 # and then sleep for 15 seconds.
+# Under the workflows: map, we can coordinate our two jobs, defined above.
+workflows:
+  version: 2
+  one_and_two: # this is the name of our workflow
+    jobs: # and here we list the jobs we are going to run.
+      - one
+      - two
